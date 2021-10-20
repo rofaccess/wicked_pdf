@@ -4,7 +4,6 @@
 require 'logger'
 require 'digest/md5'
 require 'rbconfig'
-require 'open3'
 
 require 'active_support/core_ext/module/attribute_accessors'
 require 'active_support/core_ext/object/blank'
@@ -61,9 +60,13 @@ class WickedPdf
     if track_progress?(options)
       invoke_with_progress(command, options)
     else
-      err = Open3.popen3(*command) do |_stdin, _stdout, stderr|
-        stderr.read
-      end
+      # The original mileszs implementation use Open3 and work with:
+      # - Ruby 2.3.3
+      # - Jruby 9.1.17.0 and Java 8
+      # but don't work with:
+      # - Jruby 9.1.17.0 and Java 11
+      # My current project require use Java 11 and Jruby 9.1.17.0
+      system(command.join(' '))
     end
     if options[:return_file]
       return_file = options.delete(:return_file)
